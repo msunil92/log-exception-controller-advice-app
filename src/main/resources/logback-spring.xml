@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="SERVICE_NAME" value="ProductService" />
+
+    <property name="LOG_DIRECTORY" value="logs" />
+    <property name="DEV" value="dev" />
+    <property name="DEV" value="prod" />
+
+    <property name="LOG_DEV" value="${LOG_DIRECTORY}/${DEV}/${SERVICE_NAME}/${SERVICE_NAME}_${DEV}" />
+    <property name="LOG_PROD" value="${LOG_DIRECTORY}/${DEV}/${SERVICE_NAME}/${SERVICE_NAME}_${PROD}" />
+
+    <property name="LOG_MAX_FILE_SIZE" value="1MB" />
+    <property name="LOG_TOTAL_SIZE_CAP" value="5GB" />
+    <property name="LOG_HISTORY_DAYS" value="0.1" />
+
+    <appender name="Console"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+        <springProfile name="${DEV}">
+        <file>${LOG_DEV}.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DEV}_%d{yyyy-MM-dd}_%i.log.gz</fileNamePattern>
+            <!-- each archived file, size max 10MB -->
+            <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+            <!-- total size of all archive files, if total size > 20GB, it will delete old archived file -->
+            <totalSizeCap>${LOG_TOTAL_SIZE_CAP}</totalSizeCap>
+            <!-- 60 days to keep -->
+            <maxHistory>${LOG_HISTORY_DAYS}</maxHistory>
+        </rollingPolicy>
+        </springProfile>
+
+        <springProfile name="${PROD}">
+            <file>${LOG_PROD}.log</file>
+
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_DEV}_%d{yyyy-MM-dd}_%i.log.gz</fileNamePattern>
+                <!-- each archived file, size max 10MB -->
+                <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+                <!-- total size of all archive files, if total size > 20GB, it will delete old archived file -->
+                <totalSizeCap>${LOG_TOTAL_SIZE_CAP}</totalSizeCap>
+                <!-- 60 days to keep -->
+                <maxHistory>${LOG_HISTORY_DAYS}</maxHistory>
+            </rollingPolicy>
+        </springProfile>
+
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%d %p %C{1.} [%t] %m%n</Pattern>
+        </layout>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <springProfile name="${DEV}">
+            <appender-ref ref="fileAppender" />
+        </springProfile>
+        <springProfile name="${PROD}">
+            <appender-ref ref="fileAppender" />
+        </springProfile>
+    </appender>
+
+    <!-- LOG everything at INFO level -->
+    <root level="info">
+        <appender-ref ref="Console" />
+    </root>
+    <springProfile name="default | ${DEV} ">
+        <logger name="org.springframework.web" level="INFO" />
+        <logger name="com.learn.logexp.advice" level="DEBUG" additivity="false">
+            <appender-ref ref="ASYNC" />
+            <appender-ref ref="Console" />
+        </logger>
+    </springProfile>
+    <springProfile name="${PROD} ">
+        <logger name="org.springframework.web" level="INFO" />
+        <logger name="com.learn.logexp.advice" level="DEBUG" additivity="false">
+            <appender-ref ref="ASYNC" />
+            <appender-ref ref="Console" />
+        </logger>
+    </springProfile>
+
+</configuration>
